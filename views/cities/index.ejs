@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>My cities</h1>
+    <ul>
+        <% cities.forEach( (city) => { %>
+            <li> <%= city %>  </li>
+     <% }) %>
+    </ul>
+    <form method="post" action="/cities">
+        <label for="city">City</label>
+        <input type="text" id="city" name="city" />
+        <div>
+            <% if(typeof errors !== 'undefined' && errors.length > 0) { %>
+                <%= errors[0].msg %>
+                <% } %>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
