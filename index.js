@@ -1,11 +1,24 @@
 "use strict";
 
+const MongoClient = require("mongodb").MongoClient;
+const url = "mongodb://localhost:27017";
+const client = new MongoClient(url);
+
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const app = express();
 const port = 3000;
 
-const cities = ["Nantes", "Rennes", "Quimper"];
+const db = client.db("cities_app");
+
+client
+  .connect()
+  .then(() => {
+    console.log("Connexion réussie");
+  })
+  .catch((error) => {
+    console.log("Connexion échouée:", error);
+  });
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -26,7 +39,12 @@ app.get("/", (req, res) => {
 });
 
 app.get("/cities", (req, res) => {
-  res.render("cities/index.ejs", { cities: cities });
+  db.collection("cities_collection")
+    .find()
+    .toArray()
+    .then((cities) => {
+      res.render("cities/index.ejs", { cities: cities });
+    });
 });
 
 app.post(
@@ -34,7 +52,7 @@ app.post(
   body("city")
     .isLength({ min: 3 })
     .withMessage("La ville doit avoir au moins 3 caractères"),
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(422).render("cities/index.ejs", {
@@ -43,7 +61,10 @@ app.post(
         city: req.body.city,
       });
     }
-    cities.push(req.body.city);
+    await db.collection("cities_collection").insertOne({
+      name: req.body.city,
+      uuid: crypto.randomUUID(),
+    });
     res.redirect("/cities");
   },
 );
