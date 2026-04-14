@@ -54,6 +54,7 @@ app.post(
     .withMessage("La ville doit avoir au moins 3 caractères"),
   async (req, res) => {
     const errors = validationResult(req);
+    const cities = await db.collection("cities_collection").find().toArray();
     if (!errors.isEmpty()) {
       return res.status(422).render("cities/index.ejs", {
         errors: errors.array(),
@@ -69,11 +70,41 @@ app.post(
   },
 );
 
-app.get("/cities/:number", (req, res) => {
-  if (req.params.number < 0 || req.params.number > cities.length - 1) {
-    return res.status(404).send("Pas de ville à afficher");
-  }
-  res.send(cities[req.params.number]);
+app.get("/cities/:uuid", (req, res) => {
+  db.collection("cities_collection")
+    .findOne({ uuid: req.params.uuid })
+    .then((city) => {
+      if (city) {
+        res.send(city.name);
+      } else {
+        res.status(404).send("Ville non trouvée");
+      }
+    });
+});
+
+app.get("/cities/:uuid/delete", async (req, res) => {
+  await db
+    .collection("cities_collection")
+    .deleteOne({ uuid: req.params.uuid })
+    .then((response) => {
+      console.log("res", response);
+
+      if (response.deletedCount === 1) {
+        res.redirect("/cities");
+      } else {
+        res.status(404).send("Ville non trouvée");
+      }
+    });
+});
+
+app.post("/cities/update", async (req, res) => {
+  await db.collection("cities_collection").updateOne(
+    { uuid: req.body.uuid },
+    {
+      $set: { name: req.body.city_name },
+    },
+  );
+  res.redirect("/cities");
 });
 
 app.use((req, res) => {
