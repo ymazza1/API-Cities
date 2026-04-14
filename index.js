@@ -1,8 +1,6 @@
 "use strict";
 
-const MongoClient = require("mongodb").MongoClient;
 const url = "mongodb://localhost:27017";
-const client = new MongoClient(url);
 const mongoose = require("mongoose");
 mongoose
   .connect(url + "/cities_app")
@@ -18,21 +16,10 @@ const { body, validationResult } = require("express-validator");
 const app = express();
 const port = 3000;
 
-const db = client.db("cities_app");
-
 const City = mongoose.model("City", {
   name: String,
   uuid: String,
 });
-
-client
-  .connect()
-  .then(() => {
-    console.log("Connexion réussie");
-  })
-  .catch((error) => {
-    console.log("Connexion échouée:", error);
-  });
 
 app.use(express.urlencoded({ extended: true }));
 
