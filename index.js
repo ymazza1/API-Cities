@@ -22,6 +22,7 @@ const City = mongoose.model("City", {
 });
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.use((req, res, next) => {
   console.log(
@@ -49,24 +50,20 @@ app.get("/cities", (req, res) => {
 
 app.post(
   "/cities",
-  body("city")
+  body("name")
     .isLength({ min: 3 })
     .withMessage("La ville doit avoir au moins 3 caractères"),
   async (req, res) => {
     const errors = validationResult(req);
-    const cities = await City.find();
     if (!errors.isEmpty()) {
-      return res.status(422).render("cities/index.ejs", {
-        errors: errors.array(),
-        cities: cities,
-        city: req.body.city,
-      });
+      return res.status(422).json(errors);
     }
     await City.create({
-      name: req.body.city,
+      name: req.body.name,
       uuid: crypto.randomUUID(),
     });
-    res.redirect("/cities");
+
+    await City.find({ name: req.body.name }).then((city) => res.json(city));
   },
 );
 
