@@ -43,7 +43,7 @@ app.get("/cities", (req, res) => {
   City.find().then((cities) => {
     console.log("cities", cities);
 
-    res.render("cities/index.ejs", { cities: cities });
+    res.json(cities);
   });
 });
 
