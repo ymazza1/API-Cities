@@ -101,6 +101,12 @@ app.post(
   },
 );
 
+app.get("/countries/:code", async (req, res) => {
+  await Country.findOne({ code: req.params.code }).then((country) => {
+    res.status(200).json(country);
+  });
+});
+
 app.use((req, res) => {
   res.status(404).send("Page non trouvée");
 });
