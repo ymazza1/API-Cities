@@ -107,6 +107,22 @@ app.get("/countries/:code", async (req, res) => {
   });
 });
 
+app.put("/countries/updateByCode/:code", async (req, res) => {
+  console.log("body", req.body);
+
+  await Country.findOneAndUpdate(
+    { code: req.params.code },
+    { name: req.body.name },
+  ).then((country) => res.status(200).json(country));
+});
+
+app.put("/countries/updateById/:uuid", async (req, res) => {
+  await Country.findOneAndUpdate(
+    { uuid: req.params.uuid },
+    { name: req.body.name },
+  ).then((country) => res.status(200).json(country));
+});
+
 app.use((req, res) => {
   res.status(404).send("Page non trouvée");
 });
