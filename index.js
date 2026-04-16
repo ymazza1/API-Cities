@@ -1,7 +1,9 @@
 "use strict";
 
-const url = "mongodb://localhost:27017";
 const mongoose = require("mongoose");
+const app = require("./app");
+const { url, port } = require("./config");
+
 mongoose
   .connect(url + "/cities_app")
   .then(() => {
@@ -10,89 +12,6 @@ mongoose
   .catch((error) => {
     console.log("Pas connecté :", error);
   });
-
-const express = require("express");
-const { body, validationResult } = require("express-validator");
-const app = express();
-const port = 3000;
-
-const City = mongoose.model("City", {
-  name: String,
-  uuid: String,
-});
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-app.use((req, res, next) => {
-  console.log(
-    "method: ",
-    req.method,
-    " url:",
-    req.url,
-    " user-agent:",
-    req.get("User-Agent"),
-  );
-  next();
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-app.get("/cities", (req, res) => {
-  City.find().then((cities) => {
-    console.log("cities", cities);
-
-    res.json(cities);
-  });
-});
-
-app.post(
-  "/cities",
-  body("name")
-    .isLength({ min: 3 })
-    .withMessage("La ville doit avoir au moins 3 caractères"),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json(errors);
-    }
-    await City.create({
-      name: req.body.name,
-      uuid: crypto.randomUUID(),
-    });
-
-    await City.find({ name: req.body.name }).then((city) => res.json(city));
-  },
-);
-
-app.get("/cities/:uuid", (req, res) => {
-  City.findOne({ uuid: req.params.uuid }).then((city) => {
-    if (city) {
-      res.send(city.name);
-    } else {
-      res.status(404).send("Ville non trouvée");
-    }
-  });
-});
-
-app.get("/cities/:uuid/delete", async (req, res) => {
-  await City.findOneAndDelete({ uuid: req.params.uuid });
-  res.redirect("/cities");
-});
-
-app.post("/cities/update", async (req, res) => {
-  await City.findOneAndUpdate(
-    { uuid: req.body.uuid },
-    { name: req.body.city_name },
-  );
-  res.redirect("/cities");
-});
-
-app.use((req, res) => {
-  res.status(404).send("Page non trouvée");
-});
 
 app.listen(port, () => {
   console.log("L'API ecoute sur le port", port);
