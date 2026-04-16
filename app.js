@@ -120,7 +120,16 @@ app.put("/countries/updateById/:uuid", async (req, res) => {
   await Country.findOneAndUpdate(
     { uuid: req.params.uuid },
     { name: req.body.name },
+    {
+      new: true,
+    },
   ).then((country) => res.status(200).json(country));
+});
+
+app.delete("/countries/:code", async (req, res) => {
+  await Country.findOneAndDelete({ code: req.params.code }).then((response) => {
+    res.status(200).json(response);
+  });
 });
 
 app.use((req, res) => {
