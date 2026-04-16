@@ -8,6 +8,34 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+async function dbReset() {
+  const france = new Country({
+    name: "France",
+    code: "FR",
+    uuid: crypto.randomUUID(),
+  });
+  await france.save();
+
+  const rennes = new City({
+    name: "Rennes",
+    uuid: crypto.randomUUID(),
+  });
+  const nantes = new City({
+    name: "Nantes",
+    uuid: crypto.randomUUID(),
+    sisterCity: rennes._id,
+  });
+  rennes.sisterCity = nantes._id;
+
+  rennes.save();
+  nantes.save();
+  france.cities.push(nantes);
+  france.cities.push(rennes);
+  france.save();
+}
+
+dbReset();
+
 app.use((req, res, next) => {
   console.log(
     "method: ",
@@ -25,11 +53,13 @@ app.get("/", (req, res) => {
 });
 
 app.get("/cities", (req, res) => {
-  City.find().then((cities) => {
-    console.log("cities", cities);
+  City.find()
+    .populate("sisterCity")
+    .then((cities) => {
+      console.log("cities", cities);
 
-    res.json(cities);
-  });
+      res.json(cities);
+    });
 });
 
 app.post(
@@ -75,7 +105,7 @@ app.post("/cities/update", async (req, res) => {
 });
 
 app.get("/countries", async (req, res) => {
-  const countries = await Country.find();
+  const countries = await Country.find().populate("cities");
   res.json(countries);
 });
 
@@ -131,6 +161,10 @@ app.delete("/countries/:code", async (req, res) => {
     res.status(200).json(response);
   });
 });
+
+const swaggerUi = require("swagger-ui-express");
+const swaggerDoc = require("./swagger_output.json");
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use((req, res) => {
   res.status(404).send("Page non trouvée");

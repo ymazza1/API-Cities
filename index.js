@@ -3,6 +3,9 @@
 const mongoose = require("mongoose");
 const app = require("./app");
 const { url, port } = require("./config");
+const swaggerAutogen = require("swagger-autogen");
+const outputFile = "./swagger_output.json";
+swaggerAutogen(outputFile, ["./app.js"]);
 
 mongoose
   .connect(url + "/cities_app")
