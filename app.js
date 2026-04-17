@@ -109,8 +109,6 @@ async function dbReset() {
   });
 }
 
-dbReset();
-
 app.use((req, res, next) => {
   console.log(
     "method: ",
@@ -128,13 +126,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/cities", (req, res) => {
-  City.find()
-    .populate("sisterCity")
-    .then((cities) => {
-      console.log("cities", cities);
+  City.find().then((cities) => {
+    console.log("cities", cities);
 
-      res.json(cities);
-    });
+    res.json(cities);
+  });
 });
 
 app.post(
@@ -180,7 +176,7 @@ app.post("/cities/update", async (req, res) => {
 });
 
 app.get("/countries", async (req, res) => {
-  const countries = await Country.find().populate("cities");
+  const countries = await Country.find();
   res.json(countries);
 });
 
