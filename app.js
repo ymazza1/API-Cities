@@ -9,29 +9,104 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 async function dbReset() {
+  await City.deleteMany();
+  await Country.deleteMany();
+
   const france = new Country({
     name: "France",
     code: "FR",
     uuid: crypto.randomUUID(),
+    europeanUnion: true,
   });
   await france.save();
+
+  const espagne = new Country({
+    name: "Espagne",
+    code: "SP",
+    uuid: crypto.randomUUID(),
+    europeanUnion: true,
+  });
+  await espagne.save();
+
+  const royaumeUni = new Country({
+    name: "Royaume-Uni",
+    code: "UK",
+    uuid: crypto.randomUUID(),
+    europeanUnion: false,
+  });
+  await royaumeUni.save();
 
   const rennes = new City({
     name: "Rennes",
     uuid: crypto.randomUUID(),
+    country: france._id,
+    population: 200000,
   });
-  const nantes = new City({
-    name: "Nantes",
+  await rennes.save();
+  const londres = new City({
+    name: "Londres",
     uuid: crypto.randomUUID(),
-    sisterCity: rennes._id,
+    country: royaumeUni._id,
+    population: 9000000,
   });
-  rennes.sisterCity = nantes._id;
+  await londres.save();
+  const barcelone = new City({
+    name: "Barcelone",
+    uuid: crypto.randomUUID(),
+    country: espagne._id,
+    population: 12000000,
+  });
+  await barcelone.save();
+  const paris = new City({
+    name: "Paris",
+    uuid: crypto.randomUUID(),
+    country: france._id,
+    population: 11000000,
+  });
+  await paris.save();
 
-  rennes.save();
-  nantes.save();
-  france.cities.push(nantes);
-  france.cities.push(rennes);
-  france.save();
+  await City.aggregate([
+    {
+      $lookup: {
+        from: "countries",
+        localField: "country",
+        foreignField: "_id",
+        as: "country",
+      },
+    },
+    { $unwind: "$country" },
+    { $match: { "country.europeanUnion": true } },
+    {
+      $project: {
+        _id: 0,
+        country: "$country.name",
+        name: 1,
+      },
+    },
+    {
+      $sort: {
+        population: -1,
+      },
+    },
+  ]).then((cities) => {
+    console.log("Villes en union europeenne:", cities);
+  });
+
+  await City.aggregate([
+    { $group: { _id: "$country", population: { $sum: "$population" } } },
+    {
+      $lookup: {
+        from: "countries",
+        localField: "_id",
+        foreignField: "_id",
+        as: "country",
+      },
+    },
+    { $unwind: "$country" },
+    { $project: { _id: 0, country: "$country.name", population: 1 } },
+  ]).then((cities) => {
+    console.log("Population par pays", cities);
+  });
 }
 
 dbReset();
