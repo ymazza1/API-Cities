@@ -8,6 +8,9 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+const jwt = require("jsonwebtoken");
+const { SECRET } = require("./env.js");
+
 async function dbReset() {
   await City.deleteMany();
   await Country.deleteMany();
@@ -109,6 +112,14 @@ async function dbReset() {
   });
 }
 
+const users = [
+  {
+    id: 1,
+    username: "admin",
+    password: "admin",
+  },
+];
+
 app.use((req, res, next) => {
   console.log(
     "method: ",
@@ -120,6 +131,50 @@ app.use((req, res, next) => {
   );
   next();
 });
+
+app.post("/authentication_token", async (req, res, next) => {
+  const user = users.find(
+    (u) => u.username === req.body.username && u.password === req.body.password,
+  );
+  if (!user) {
+    return res.status(400).json({ message: "Mauvais utilisateur" });
+  }
+  const token = jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+    },
+    SECRET,
+    { expiresIn: "3 hours" },
+  );
+  return res.json({ access_token: token });
+});
+
+function extractToken(headerValue) {
+  if (typeof headerValue !== "string") {
+    return false;
+  }
+
+  const matches = headerValue.match(/(bearer)\s+(\S+)/i);
+  return matches && matches[2];
+}
+
+function checkTokenMiddleware(req, res, next) {
+  const token =
+    req.headers.authorization && extractToken(req.headers.authorization);
+
+  if (!token) {
+    return res.status(401).json({ message: "Erreur: besoin d'un token" });
+  }
+
+  jwt.verify(token, SECRET, (err, decodedToken) => {
+    if (err) {
+      return res.status(401).json({ message: "Erreur: mauvais token" });
+    } else {
+      return next();
+    }
+  });
+}
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -135,6 +190,7 @@ app.get("/cities", (req, res) => {
 
 app.post(
   "/cities",
+  checkTokenMiddleware,
   body("name")
     .isLength({ min: 3 })
     .withMessage("La ville doit avoir au moins 3 caractères"),
